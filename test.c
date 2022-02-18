@@ -20,7 +20,7 @@ void func1(void)
 
 int main(int argc, const char *argv[])
 {
-    skunwind_register(NULL);
+    skunwind_register("/tmp/error.log");
 
     func1();
 

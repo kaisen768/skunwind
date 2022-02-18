@@ -20,9 +20,8 @@ static char *filename = NULL;
 
 static _Unwind_Reason_Code unwind_backtrace_callback(struct _Unwind_Context *context, void *arg)
 {
-
-    int loginfo;
-    char buffer[100];
+    int logfile;
+    char buf[128];
 
     uint64_t pc = _Unwind_GetIP(context);
     Dl_info info;
@@ -30,12 +29,12 @@ static _Unwind_Reason_Code unwind_backtrace_callback(struct _Unwind_Context *con
     if (pc) {
         dladdr((const void*)pc, &info);
 
-	    fprintf(stderr, "fname: %s, sname: %s, off: 0x%p\n", info.dli_fname, info.dli_sname, info.dli_saddr);
+	    fprintf(stderr, "file: %-42s \tfunc: %-32s \tOffset Addr: 0x%p\n", info.dli_fname, info.dli_sname, info.dli_saddr);
         
         if (arg) {
-            loginfo = *((int *)arg);
-            sprintf(buffer, "fname: %s, sname: %s, off: 0x%p\n", info.dli_fname, info.dli_sname, info.dli_saddr);
-            write(loginfo, buffer, strlen(buffer));
+            logfile = *((int *)arg);
+            sprintf(buf, "file: %-42s \tfunc: %-32s \tOffset Addr: 0x%p\n", info.dli_fname, info.dli_sname, info.dli_saddr);
+            write(logfile, buf, strlen(buf));
         }
     }
 
@@ -44,15 +43,17 @@ static _Unwind_Reason_Code unwind_backtrace_callback(struct _Unwind_Context *con
 
 static void signal_exit_handler(int sig)
 {
-    int loginfo;
+    static int logfile;
+    void *exta;
 
     if (filename) {
-        loginfo = open(filename, O_RDWR|O_CREAT|O_APPEND, 0666);
-        _Unwind_Backtrace(unwind_backtrace_callback, (void *)&loginfo);
+        logfile = open(filename, O_RDWR|O_CREAT|O_APPEND, 0666);
+        exta = &logfile;
     } else {
-        _Unwind_Backtrace(unwind_backtrace_callback, NULL);
+        exta = NULL;
     }
 
+    _Unwind_Backtrace(unwind_backtrace_callback, exta);
     exit(1);
 }
 
